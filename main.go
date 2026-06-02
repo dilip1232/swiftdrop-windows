@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"os/signal"
 	"syscall"
 
@@ -44,9 +43,6 @@ func runApp(port int) {
 	reg.LoadManual()
 	trk := core.NewTracker()
 	core.InitPairStore()
-
-	// Best-effort Windows Firewall rules so mDNS and transfers work.
-	ensureFirewall(id.Port)
 
 	srv := core.NewServer(id, reg, trk)
 	srv.WebFS = webFS
@@ -143,32 +139,6 @@ func runApp(port int) {
 
 	if err := app.Run(); err != nil {
 		log.Fatal(err)
-	}
-}
-
-// ensureFirewall adds a program-based Windows Firewall inbound rule that
-// allows ALL traffic for this executable. This is more reliable than
-// port-based rules and is the standard approach for desktop apps.
-// Fails silently if not running as admin — user should run as admin once
-// or use the provided setup-firewall.bat.
-func ensureFirewall(port int) {
-	exePath, err := os.Executable()
-	if err != nil {
-		log.Printf("firewall: cannot determine exe path: %v", err)
-		return
-	}
-	// Program-based rule: allow all inbound for this exe.
-	out, err := exec.Command("netsh", "advfirewall", "firewall", "add", "rule",
-		"name=SwiftDrop",
-		"dir=in", "action=allow",
-		"program="+exePath,
-		"enable=yes",
-		"profile=private,public",
-	).CombinedOutput()
-	if err != nil {
-		log.Printf("firewall: could not add rule (run as admin once): %v — %s", err, string(out))
-	} else {
-		log.Printf("firewall: rule added for %s", exePath)
 	}
 }
 
