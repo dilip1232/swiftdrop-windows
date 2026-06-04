@@ -110,6 +110,16 @@ func runApp(port int) {
 	})
 
 	// System tray — left-click toggles the window, right-click shows menu.
+	// Receiver consent: when a pending transfer arrives, bring the window
+	// to the front so the user sees the accept/reject buttons in the UI.
+	// The web UI's /api/transfers/accept and /api/transfers/reject feed
+	// tr.Decision. No native dialog needed — the toast notification
+	// already fires via Notify() in core.
+	srv.ConsentHook = func(tr *core.Transfer, from, name string, size int64) {
+		window.Show()
+		window.Focus()
+	}
+
 	tray := app.SystemTray.New()
 	tray.SetIcon(core.TrayIconColored()) // colored icon for Windows system tray
 	tray.SetTooltip("SwiftDrop")
